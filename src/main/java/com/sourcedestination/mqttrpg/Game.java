@@ -6,7 +6,6 @@ import com.google.gson.GsonBuilder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /** Class for managing the state of games using the 2D API
@@ -20,8 +19,8 @@ public abstract class Game implements Container {
 	private final AtomicInteger nextEntityID;
 	private final AtomicInteger nextEventID = new AtomicInteger(1);
 	private final Map<EventListener,Object> listeners = new ConcurrentHashMap<>();
+	private final ClientHub hub;
 	private final DataStore dataStore;
-	private final EventListener eventPropagator;
 
 	// no concurrent set, so only keys used to mimic set
 	final BiMap<Integer, Entity> registeredEntities;
@@ -32,11 +31,11 @@ public abstract class Game implements Container {
 	private final Map<Entity, Container> entityLocations;
 
 	public Game(String id,
+				ClientHub hub,
 				DataStore dataStore,
-				EventListener eventPropagator,
-				Consumer<EventListener> incomingEventCallback,
 				Board ... boards) {
 		this.id = id;
+		this.hub = hub;
 		this.dataStore = dataStore;
 		this.startTime = System.currentTimeMillis();
 		this.elapsedTime = 0;
@@ -47,14 +46,6 @@ public abstract class Game implements Container {
 		entityLocations = new HashMap<>();
 		  // set next entity ID to be one more than the biggest one in the database
 		this.nextEntityID = new AtomicInteger(dataStore.getMaxEntityId() + 1);
-		this.eventPropagator = eventPropagator;
-		incomingEventCallback.accept(new EventListener() {
-			@Override
-			public synchronized void acceptEvent(Event event) {
-				getListeners().forEach(listener -> listener.accept(event));
-			}
-		});
-
 		for(var board : boards) addBoard(board);
 	}
 
@@ -343,12 +334,8 @@ public abstract class Game implements Container {
 	}
 
 	public void propagateEvent(Event event) {
-		eventPropagator.acceptEvent(event);
 		for(var listener : listeners.keySet())
 			listener.accept(event);
-	}
-	public void propagateEvent(Event event, long delayTime) {
-		eventPropagator.acceptEvent(event, delayTime);
 	}
 
 	/** create an agent for the specified id/role (or retrieve existing agent)
