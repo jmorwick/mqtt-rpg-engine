@@ -98,5 +98,7 @@ public abstract class Entity implements HasProperties {
 		m.put("properties", properties);
 		return gson.toJson(m);
 	}
+
+	public Entity getSelfReference() { return this; }
 	
 }
