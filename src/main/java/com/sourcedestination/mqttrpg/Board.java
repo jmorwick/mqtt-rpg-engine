@@ -100,7 +100,7 @@ public class Board {
 	 * @param direction direction of adjacent tile
 	 * @return adjacent Tile
 	 */
-	public Tile getAdjacentTile(Tile tile, Direction direction) {
+	public Optional<Tile> getAdjacentTile(Tile tile, Direction direction) {
 		var row = tile.getRow();
 		var column = tile.getColumn();
 		switch (direction) {
@@ -110,8 +110,8 @@ public class Board {
 			case EAST: column++; break;
 		}
 		if (locationExists(column, row))
-			return getTile(column, row);
-		return null;
+			return Optional.of(getTile(column, row));
+		return Optional.empty();
 	}
 
 	/**
@@ -125,14 +125,19 @@ public class Board {
 	 * @param to   ending Tile
 	 * @return direction from starting Tile to ending Tile
 	 */
-	public Direction getAdjacentTileDirection(Tile from, Tile to) {
+	public Optional<Direction> getAdjacentTileDirection(Tile from, Tile to) {
+		if(Math.abs(from.getColumn() - to.getColumn()) + Math.abs(from.getRow() - to.getRow()) != 1) {
+			// tiles are not adjecent
+			return Optional.empty();
+		}
+
 		if(from.getColumn() > to.getColumn())
-			return Direction.WEST;
+			return Optional.of(Direction.WEST);
 		if(from.getColumn() < to.getColumn())
-			return Direction.EAST;
+			return Optional.of(Direction.EAST);
 		if(from.getRow() > to.getRow())
-			return Direction.NORTH;
-		return Direction.SOUTH;
+			return Optional.of(Direction.NORTH);
+		return Optional.of(Direction.SOUTH);
 	}
 	
 	/**

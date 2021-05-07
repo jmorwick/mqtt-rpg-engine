@@ -39,21 +39,21 @@ public class TestBoard {
 
     @Test
     public void testGetAdjacentTile(){
-        assertEquals(tile3,board.getAdjacentTile(tile1, Direction.EAST));
-        assertEquals(null, board.getAdjacentTile(tile1, Direction.NORTH));
-        assertEquals(tile2, board.getAdjacentTile(tile1, Direction.SOUTH));
-        assertEquals(null, board.getAdjacentTile(tile1, Direction.WEST));
+        assertEquals(tile3,board.getAdjacentTile(tile1, Direction.EAST).get());
+        assertFalse(board.getAdjacentTile(tile1, Direction.NORTH).isPresent());
+        assertEquals(tile2, board.getAdjacentTile(tile1, Direction.SOUTH).get());
+        assertFalse(board.getAdjacentTile(tile1, Direction.WEST).isPresent());
 
     }
 
     @Test
     public void testGetAdjacentTileDirection(){
-        assertEquals(Direction.EAST, board.getAdjacentTileDirection(tile1, tile3));
-        assertEquals(Direction.SOUTH, board.getAdjacentTileDirection(tile1, tile2));
-        assertEquals(Direction.NORTH, board.getAdjacentTileDirection(tile4, tile3));
+        assertEquals(Direction.EAST, board.getAdjacentTileDirection(tile1, tile3).get());
+        assertEquals(Direction.SOUTH, board.getAdjacentTileDirection(tile1, tile2).get());
+        assertEquals(Direction.NORTH, board.getAdjacentTileDirection(tile4, tile3).get());
 
         //these tiles aren't adjacent
-        assertEquals(Direction.WEST, board.getAdjacentTileDirection(tile3, tile2));
+        assertFalse(board.getAdjacentTileDirection(tile3, tile2).isPresent());
     }
 
     @Test
