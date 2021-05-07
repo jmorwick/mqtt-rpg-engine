@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>edu.missouriwestern.csmp.gg</groupId>
-    <artifactId>2dapi</artifactId>
-    <version>0.4</version>
+    <groupId>net.sourcedestination</groupId>
+    <artifactId>mqtt-rpg</artifactId>
+    <version>0.1-SNAPSHOT</version>
  
     <build>
         <plugins>
@@ -55,14 +55,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <distributionManagement>
-        <repository>
-          <id>github</id>
-          <name>GitHub mwsu-csmp Apache Maven Packages</name>
-          <url>https://maven.pkg.github.com/mwsu-csmp/gg-game-api</url>
-        </repository>   
-    </distributionManagement>  
          
     <properties>
         <java.version>11</java.version>
