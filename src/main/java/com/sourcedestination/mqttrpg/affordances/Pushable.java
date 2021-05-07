@@ -4,7 +4,7 @@ import com.sourcedestination.mqttrpg.*;
 
 public interface Pushable extends Affordance {
     public default Action push(Entity pusher) {
-        return game -> {
+        Action a = game -> {
             if(game.getEntityLocation(pusher) instanceof  Tile pusherTile) {
                 if(game.getEntityLocation(getSelfReference()) instanceof Tile myTile) {
                     var board = pusherTile.getBoard();
@@ -20,5 +20,6 @@ public interface Pushable extends Affordance {
                 }
             }
         };
+        return a.describe("entity " + pusher.getID() + " pushed entity " + getSelfReference().getID());
     }
 }
