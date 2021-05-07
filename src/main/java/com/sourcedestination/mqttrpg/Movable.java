@@ -1,4 +1,4 @@
-package com.sourcedestination.mqttrpg.affordances;
+package com.sourcedestination.mqttrpg;
 
 import com.sourcedestination.mqttrpg.*;
 

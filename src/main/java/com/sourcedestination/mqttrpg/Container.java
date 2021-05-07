@@ -4,7 +4,7 @@ import java.util.stream.Stream;
 /**
  * Interface for a container that can hold entities.
  */
-public interface Container {
+public interface Container extends HasProperties {
 
 	public Game getGame();
 

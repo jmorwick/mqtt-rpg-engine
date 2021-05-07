@@ -1,8 +1,5 @@
 package com.sourcedestination.mqttrpg;
 
-import com.sourcedestination.mqttrpg.datastores.InMemoryDataStore;
-import org.checkerframework.checker.units.qual.C;
-
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -16,6 +13,7 @@ public class DummyGame extends Game {
         return null;
     }
 
+    public boolean checkGameAlive() { return true; }
 
     public static ClientHub getDummyHub() {
         return new ClientHub() {
@@ -52,5 +50,15 @@ public class DummyGame extends Game {
 
     public DummyGame() {
         super("game1", getDummyHub(), new InMemoryDataStore(), new Map1());
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return null;
+    }
+
+    @Override
+    public void setProperty(String key, Object value) {
+
     }
 }

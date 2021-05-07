@@ -3,7 +3,7 @@ package com.sourcedestination.mqttrpg;
 /** represents an outside agent that acts within the game
  * not an {@link Entity} as an agent may potentially comprise multiple entities within the game.
  */
-public abstract class Agent implements Container, HasProperties, EventListener {
+public abstract class Agent implements Container, EventListener {
 
 	private final String id;
 	private final String role;

@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 /** Represents spaces on the {@link Board} that contain entities */
-public class Tile implements Container, HasProperties {
+public class Tile implements Container {
 	public final int row;
 	public final int column;
 	final char character;
@@ -73,8 +73,6 @@ public class Tile implements Container, HasProperties {
 	// TODO: consider a better workaround that allows board to stay final
 	public void setBoard(Board board) {
 		this.board = board;
-		if(this instanceof EventListener && getGame() != null)
-			getGame().registerListener((EventListener)this);
 	}
 
 	/** returns a JSON representation of this tile and its properties

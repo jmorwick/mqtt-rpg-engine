@@ -2,15 +2,17 @@ package com.sourcedestination.mqttrpg;
 
 import com.google.common.collect.*;
 import com.google.gson.GsonBuilder;
+import net.sourcedestination.funcles.tuple.Tuple2;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /** Class for managing the state of games using the 2D API
  */
-public abstract class Game implements Container {
+public abstract class Game implements Container, Runnable {
 
 	private final String id;
 	private final Map<String,Board> boards = new ConcurrentHashMap<>();
@@ -18,9 +20,10 @@ public abstract class Game implements Container {
 	private final long elapsedTime;  // time elapsed in game since start or last restart
 	private final AtomicInteger nextEntityID;
 	private final AtomicInteger nextEventID = new AtomicInteger(1);
-	private final Map<EventListener,Object> listeners = new ConcurrentHashMap<>();
 	private final ClientHub hub;
 	private final DataStore dataStore;
+	private final List<Action> actionQueue;
+	private final List<Tuple2<Agent,Command>> commandQueue;
 
 	// no concurrent set, so only keys used to mimic set
 	final BiMap<Integer, Entity> registeredEntities;
@@ -46,6 +49,8 @@ public abstract class Game implements Container {
 		entityLocations = new HashMap<>();
 		  // set next entity ID to be one more than the biggest one in the database
 		this.nextEntityID = new AtomicInteger(dataStore.getMaxEntityId() + 1);
+		this.actionQueue = new Vector<>();
+		this.commandQueue = new Vector<>();
 		for(var board : boards) addBoard(board);
 	}
 
@@ -64,26 +69,9 @@ public abstract class Game implements Container {
 		return System.currentTimeMillis() - startTime + elapsedTime;
 	}
 
+	public ClientHub getClientHub() { return hub; }
 	public DataStore getDataStore(){
 		return (DataStore) dataStore;
-	}
-
-	/** begins forwarding all game events to specified listener */
-	public void registerListener(EventListener listener) {
-		listeners.put(listener, "thing");
-	}
-
-	/** stops forwarding all game events to specified listener */
-	public void deregisterListener(EventListener listener) {
-		listeners.put(listener, "thing");
-	}
-
-	/** returns currently registered event listeners
-	 * All listeners registered via registerListener
-	 * @return
-	 */
-	public Stream<EventListener> getListeners() {
-		return listeners.keySet().stream();
 	}
 
 	/** add an agent to the game
@@ -92,7 +80,11 @@ public abstract class Game implements Container {
 	public void addAgent(Agent agent) {
 		allAgents.put(agent.getAgentID(), agent);
 		getDataStore().load(agent);
+		getClientHub().publishAgent(agent);
 	}
+
+	public void addAction(Action a) { actionQueue.add(a); }
+	public void addCommand(Agent a, Command c) { commandQueue.add(Tuple2.makeTuple(a,c)); }
 
 	/** remove agent from the game
 	 *
@@ -144,13 +136,6 @@ public abstract class Game implements Container {
 				.findFirst().getAsInt();
 	}
 
-	/** determine the number of players currently in the game
-	 *
-	 * @return the number of players in the game
-	 */
-	public int getNumPlayers() {
-		return allAgents.size();
-	}
 	/**
 	 * Returns the set of all {@link Agent}s
 	 * @return connected Players
@@ -198,9 +183,6 @@ public abstract class Game implements Container {
 			entityLocations.put(ent, this);
 			containerContents.put(this, ent);
 		}
-		if(ent instanceof EventListener) {
-			registerListener((EventListener)ent);
-		}
 		propagateEvent(new Event(this, "entity-creation",
 				Map.of(
 						"entity-id", ent.getID()+""
@@ -213,9 +195,6 @@ public abstract class Game implements Container {
 	 */
 	public void removeEntity(Entity ent) {
 		synchronized(this) {
-			if(ent instanceof EventListener) {
-				deregisterListener((EventListener)ent);
-			}
 			moveEntity(ent, this); // generate an entity moved event
 
 			var currentContainer = entityLocations.get(ent);
@@ -253,10 +232,6 @@ public abstract class Game implements Container {
 				containerContents.remove(currentLocation, ent);
 			entityLocations.put(ent, container);
 			containerContents.put(container, ent);
-		propagateEvent(entityMovedEvent(ent, prev));
-	}
-
-	public Event entityMovedEvent(Entity ent, Container prev) {
 		var properties = new HashMap<String,Object>();
 		properties.put("entity", ent.getID());
 		if(prev instanceof Tile) {
@@ -274,7 +249,7 @@ public abstract class Game implements Container {
 		} else if(current instanceof Entity) {
 			properties.put("entity-container", ((Entity)current).getID()+"");
 		}
-		return new Event(this, "entity-moved", properties);
+		propagateEvent(new Event(this, "entity-moved", properties));
 	}
 
 	/** Determines whether or not a specified Container holds the specified entity */
@@ -306,6 +281,7 @@ public abstract class Game implements Container {
 	 * For instance, if an entity is held by a treasure chest and the treasure chest appears on a tile,
 	 * the tile holding the treasure chest is returned.
 	 * Returns null if no tile contains this entity */
+	@Deprecated
 	public synchronized Container getTopLevelEntityLocation(Entity ent) {
 		assert ent != null;
 
@@ -334,8 +310,19 @@ public abstract class Game implements Container {
 	}
 
 	public void propagateEvent(Event event) {
-		for(var listener : listeners.keySet())
-			listener.accept(event);
+		hub.publishEvent(event);
+		getAllAgents()
+				.forEach(listener -> ((EventListener) listener).acceptEvent(event));
+		getEntities()
+				.filter(ent -> ent instanceof EventListener)
+				.forEach(listener -> ((EventListener) listener).acceptEvent(event));
+		boards.values().stream()
+				.filter(board -> board instanceof EventListener)
+				.forEach(listener -> ((EventListener) listener).acceptEvent(event));
+		boards.values().stream()
+			.flatMap(board -> board.getTileStream())
+				.filter(tile -> tile instanceof EventListener)
+				.forEach(listener -> ((EventListener) listener).acceptEvent(event));
 	}
 
 	/** create an agent for the specified id/role (or retrieve existing agent)
@@ -345,4 +332,40 @@ public abstract class Game implements Container {
 	 * @return
 	 */
 	public abstract Agent getAgent(String id, String role);
+
+	public abstract boolean checkGameAlive();
+
+	public void run() {
+		while(checkGameAlive()) {
+			commandQueue.stream()
+					.collect(Collectors.toList()).stream() // copy to avoid modification errors
+					.forEach(t2 -> {
+				commandQueue.remove(t2);
+				t2.unpack((agent, command) -> {
+					// TODO: log command
+					try {
+						agent.receiveCommand(command);
+					} catch (CommandException e) {
+						// TODO: log/handle error
+					}
+				});
+			});
+			actionQueue.stream()
+					.collect(Collectors.toList()).stream() // copy to avoid modification errors
+					.forEach(action -> {
+				actionQueue.remove(action);
+				action.accept(this);
+			});
+		}
+
+		// save everything to datastore
+		getAllAgents()
+				.filter(agent -> agent instanceof HasProperties)
+				.forEach(agent -> dataStore.save(agent));
+		getEntities()
+				.filter(ent -> ent instanceof HasProperties)
+				.forEach(ent -> dataStore.save(ent));
+		boards.values().stream().flatMap(b->b.getTileStream()).forEach(t -> dataStore.save(t));
+		dataStore.save(this);
+	}
 }

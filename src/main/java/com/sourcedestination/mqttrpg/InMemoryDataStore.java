@@ -1,9 +1,4 @@
-package com.sourcedestination.mqttrpg.datastores;
-
-import com.sourcedestination.mqttrpg.Agent;
-import com.sourcedestination.mqttrpg.DataStore;
-import com.sourcedestination.mqttrpg.Entity;
-import com.sourcedestination.mqttrpg.HasProperties;
+package com.sourcedestination.mqttrpg;
 
 import java.util.ArrayList;
 import java.util.Map;
