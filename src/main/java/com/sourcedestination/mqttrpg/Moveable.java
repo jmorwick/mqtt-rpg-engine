@@ -2,7 +2,7 @@ package com.sourcedestination.mqttrpg;
 
 import com.sourcedestination.mqttrpg.*;
 
-public interface Movable extends Affordance {
+public interface Moveable extends Affordance {
 
     public default boolean canMove(Agent mover, Container container) {
         return true;

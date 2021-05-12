@@ -3,6 +3,11 @@ package com.sourcedestination.mqttrpg;
 import com.sourcedestination.mqttrpg.*;
 
 public interface Pushable extends Affordance {
+
+    public default boolean canPush(Entity pusher, Container container) {
+        return true;
+    }
+
     public default Action push(Entity pusher) {
         Action a = game -> {
             if(game.getEntityLocation(pusher) instanceof  Tile pusherTile) {
@@ -13,7 +18,8 @@ public interface Pushable extends Affordance {
                         if(dir.isPresent()) {
                             var newTile = board.getAdjacentTile(myTile, dir.get());
                             if(newTile.isPresent()) {
-                                game.moveEntity(getSelfReference(), newTile.get());
+                                if(canPush(pusher, newTile.get()))
+                                    game.moveEntity(getSelfReference(), newTile.get());
                             }
                         }
                     }
