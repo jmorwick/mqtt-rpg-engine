@@ -45,11 +45,11 @@ public class DummyGame extends Game {
     }
 
     public DummyGame(Board board){
-        super("game1", getDummyHub(), new InMemoryDataStore(), new Map1(), board);
+        super("game1", getDummyHub(), new Map1(), board);
     }
 
     public DummyGame() {
-        super("game1", getDummyHub(), new InMemoryDataStore(), new Map1());
+        super("game1", getDummyHub(), new Map1());
     }
 
     @Override

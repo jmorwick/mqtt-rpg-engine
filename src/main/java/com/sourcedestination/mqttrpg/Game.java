@@ -21,7 +21,6 @@ public abstract class Game implements Container, Runnable {
 	private final AtomicInteger nextEntityID;
 	private final AtomicInteger nextEventID = new AtomicInteger(1);
 	private final ClientHub hub;
-	private final DataStore dataStore;
 	private final List<Action> actionQueue;
 	private final List<Tuple2<Agent,Command>> commandQueue;
 
@@ -35,11 +34,9 @@ public abstract class Game implements Container, Runnable {
 
 	public Game(String id,
 				ClientHub hub,
-				DataStore dataStore,
 				Board ... boards) {
 		this.id = id;
 		this.hub = hub;
-		this.dataStore = dataStore;
 		this.startTime = System.currentTimeMillis();
 		this.elapsedTime = 0;
 		registeredEntities = Maps.synchronizedBiMap(HashBiMap.create());
@@ -48,7 +45,7 @@ public abstract class Game implements Container, Runnable {
 		containerContents = HashMultimap.create();
 		entityLocations = new HashMap<>();
 		  // set next entity ID to be one more than the biggest one in the database
-		this.nextEntityID = new AtomicInteger(dataStore.getMaxEntityId() + 1);
+		this.nextEntityID = new AtomicInteger(1);
 		this.actionQueue = new Vector<>();
 		this.commandQueue = new Vector<>();
 		for(var board : boards) addBoard(board);
@@ -70,16 +67,12 @@ public abstract class Game implements Container, Runnable {
 	}
 
 	public ClientHub getClientHub() { return hub; }
-	public DataStore getDataStore(){
-		return (DataStore) dataStore;
-	}
 
 	/** add an agent to the game
 	 * @param agent agent to be added to the game
 	 */
 	public void addAgent(Agent agent) {
 		allAgents.put(agent.getAgentID(), agent);
-		getDataStore().load(agent);
 		getClientHub().publishAgent(agent);
 	}
 
@@ -159,25 +152,12 @@ public abstract class Game implements Container, Runnable {
 
 	/**
 	 * Registers given {@link Entity} with the Game
-	 * If the entity is an event listener, it is also registered as such.
 	 * @param ent registering Entity
 	 */
 	public void addEntity(Entity ent) {
 		assert ent != null;
-		var id = -1; // temporary id, -1 means entity was not found in db
-		if(dataStore != null && ent.getClass().isAnnotationPresent(Permanent.class)) {
-			// this entity should be loaded from the database if possible
-			var ids = dataStore.search(ent.getProperties());
-			if(ids.size() == 1) {  // found a unique entity in the db
-				id = ids.get(0);   // assign its id
-				ent.setProperty("id", ""+id);  // set the id as a property to look up other properties
-				dataStore.load(ent);  // load other properties from the database
-			}
-		}
-		if(id == -1) {
-			// could not load id from database
-			id = nextEntityID.getAndIncrement();
-		}
+		var id = nextEntityID.getAndIncrement();
+		
 		registeredEntities.put(id, ent);
 		synchronized (this) { // add entity to the game's contents as default
 			entityLocations.put(ent, this);
@@ -357,15 +337,5 @@ public abstract class Game implements Container, Runnable {
 				action.accept(this);
 			});
 		}
-
-		// save everything to datastore
-		getAllAgents()
-				.filter(agent -> agent instanceof HasProperties)
-				.forEach(agent -> dataStore.save(agent));
-		getEntities()
-				.filter(ent -> ent instanceof HasProperties)
-				.forEach(ent -> dataStore.save(ent));
-		boards.values().stream().flatMap(b->b.getTileStream()).forEach(t -> dataStore.save(t));
-		dataStore.save(this);
 	}
 }

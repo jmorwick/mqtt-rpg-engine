@@ -19,9 +19,8 @@ public class TestContainer {
 
     @Test
     public void testGetGame(){
-        assertEquals(3, ent.getGame().getNextEventId());
-        assertEquals(2, ent.getGame().getEntityId(ent));
-        //TODO:assertEquals(ent.toString(), ent.getGame().getEntity(2));
+        assertTrue(game == ent.getGame());
+        assertTrue(game == ent2.getGame());
     }
 
     @Test
@@ -46,7 +45,6 @@ public class TestContainer {
 
         game.removeEntity(ent);
         game2.removeEntity(ent);
-        //TODO:assertEquals(0, game2.getEntities().count());
     }
 
     @Test
@@ -67,9 +65,5 @@ public class TestContainer {
     public void containsEntity(){
         assertEquals(true, game.containsEntity(ent));
         assertEquals(true, game.containsEntity(ent2));
-        //assertEquals(false, game2.containsEntity(ent));
-       //TODO: assertEquals(false, game2.containsEntity(ent2));
-        //assertEquals(false, game.containsEntity(new DummyEntity(game2)));
-        //assertEquals(true, game2.containsEntity(new DummyEntity(game2)));
     }
 }
