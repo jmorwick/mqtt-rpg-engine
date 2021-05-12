@@ -20,7 +20,6 @@ public abstract class Game implements Container, Runnable {
 	private final long elapsedTime;  // time elapsed in game since start or last restart
 	private final AtomicInteger nextEntityID;
 	private final AtomicInteger nextEventID = new AtomicInteger(1);
-	private final ClientHub hub;
 	private final List<Action> actionQueue;
 	private final List<Tuple2<Agent,Command>> commandQueue;
 
@@ -32,11 +31,8 @@ public abstract class Game implements Container, Runnable {
 	private final Multimap<Container, Entity> containerContents;
 	private final Map<Entity, Container> entityLocations;
 
-	public Game(String id,
-				ClientHub hub,
-				Board ... boards) {
+	public Game(String id, Board ... boards) {
 		this.id = id;
-		this.hub = hub;
 		this.startTime = System.currentTimeMillis();
 		this.elapsedTime = 0;
 		registeredEntities = Maps.synchronizedBiMap(HashBiMap.create());
@@ -66,14 +62,12 @@ public abstract class Game implements Container, Runnable {
 		return System.currentTimeMillis() - startTime + elapsedTime;
 	}
 
-	public ClientHub getClientHub() { return hub; }
 
 	/** add an agent to the game
 	 * @param agent agent to be added to the game
 	 */
 	public void addAgent(Agent agent) {
 		allAgents.put(agent.getAgentID(), agent);
-		getClientHub().publishAgent(agent);
 	}
 
 	public void addAction(Action a) { actionQueue.add(a); }

@@ -15,41 +15,13 @@ public class DummyGame extends Game {
 
     public boolean checkGameAlive() { return true; }
 
-    public static ClientHub getDummyHub() {
-        return new ClientHub() {
-            @Override
-            public void publishEvent(Event e) {
-
-            }
-
-            @Override
-            public void publishBoardState(Board b) {
-
-            }
-
-            @Override
-            public void publishEntityState(Entity e) {
-
-            }
-
-            @Override
-            public void publishAgent(Agent a) {
-
-            }
-
-            @Override
-            public void registerCommandCallback(String agent, Consumer<String> jsonCallback) {
-
-            }
-        };
-    }
 
     public DummyGame(Board board){
-        super("game1", getDummyHub(), new Map1(), board);
+        super("game1", new Map1(), board);
     }
 
     public DummyGame() {
-        super("game1", getDummyHub(), new Map1());
+        super("game1", new Map1());
     }
 
     @Override
