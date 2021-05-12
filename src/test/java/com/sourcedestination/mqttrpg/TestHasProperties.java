@@ -28,42 +28,4 @@ public class TestHasProperties {
         assertEquals("\"U\"", json.get("sprite").toString());
     }
 
-    @Test
-    public void testHasProperty(){
-        assertFalse(tile1.hasProperty("sprite"));
-        assertTrue(tile1.hasProperty("character"));
-        assertFalse(tile1.hasProperty("Character"));
-    }
-
-    @Test
-    public void testGetProperty(){
-        System.out.println(tile1.getProperties());
-        JsonObject json = (JsonObject)parser.parse(tile1.getProperties().toString());
-        assertEquals("\"L\"", json.get("character").toString());
-    }
-
-    @Test
-    public void testGetEntity(){
-        assertEquals(1, tile1.getEntities().count());
-        assertEquals(entity, tile1.getEntities().findFirst().get());
-    }
-
-    @Test
-    public void testGetDirection(){
-        assertEquals(Optional.empty(), tile1.getDirection());
-        tile1.setProperties(Map.of("direction", "NORTH"));
-        assertEquals("Optional[N]", tile1.getDirection().toString());
-    }
-
-    @Test
-    public void testGetTile(){
-        assertEquals(tile1, board.getTile(0,0));
-    }
-
-    @Test
-    public void testSerializeProperties(){
-        JsonObject json = (JsonObject)parser.parse(tile1.serializeProperties());
-        assertEquals("\"L\"", json.get("character").toString());
-    }
-
 }

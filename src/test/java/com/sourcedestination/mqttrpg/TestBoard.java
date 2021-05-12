@@ -88,7 +88,7 @@ public class TestBoard {
 
     @Test
     public void TestGetName(){
-        assertEquals("unsmart-board", board.getName());
+        assertEquals("unsmart-board", board.getID());
     }
 
     @Test
