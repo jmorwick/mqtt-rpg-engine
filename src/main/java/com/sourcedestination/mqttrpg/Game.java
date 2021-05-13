@@ -20,8 +20,8 @@ public abstract class Game implements Container, Runnable {
 	private final long elapsedTime;  // time elapsed in game since start or last restart
 	private int nextEntityID = 1;
 	private int nextEventID = 1;
-	private final List<Action> actionQueue = new Vector<>();
-	private final List<Tuple2<Agent,Command>> commandQueue = new ArrayList<>();
+	private final List<Action> actionQueue = new ArrayList<>();
+	private final List<Tuple2<Agent,Command>> commandQueue = new Vector<>();
 	private final BiMap<Integer, Entity> registeredEntities = HashBiMap.create();
 	private final BiMap<String, Agent> allAgents = HashBiMap.create();
 
