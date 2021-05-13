@@ -15,17 +15,15 @@ import java.util.stream.Stream;
 public abstract class Game implements Container, Runnable {
 
 	private final String id;
-	private final Map<String,Board> boards = new ConcurrentHashMap<>();
+	private final Map<String,Board> boards = new HashMap<>();
 	private final long startTime;    // time when game was started or restarted
 	private final long elapsedTime;  // time elapsed in game since start or last restart
-	private final AtomicInteger nextEntityID;
-	private final AtomicInteger nextEventID = new AtomicInteger(1);
-	private final List<Action> actionQueue;
-	private final List<Tuple2<Agent,Command>> commandQueue;
-
-	// no concurrent set, so only keys used to mimic set
-	final BiMap<Integer, Entity> registeredEntities;
-	private final BiMap<String, Agent> allAgents;
+	private int nextEntityID = 1;
+	private int nextEventID = 1;
+	private final List<Action> actionQueue = new Vector<>();
+	private final List<Tuple2<Agent,Command>> commandQueue = new ArrayList<>();
+	private final BiMap<Integer, Entity> registeredEntities = HashBiMap.create();
+	private final BiMap<String, Agent> allAgents = HashBiMap.create();
 
 	// access must be protected by monitor
 	private final Multimap<Container, Entity> containerContents;
@@ -35,15 +33,10 @@ public abstract class Game implements Container, Runnable {
 		this.id = id;
 		this.startTime = System.currentTimeMillis();
 		this.elapsedTime = 0;
-		registeredEntities = Maps.synchronizedBiMap(HashBiMap.create());
-		allAgents = Maps.synchronizedBiMap(HashBiMap.create());
 		// access must be protected by monitor
 		containerContents = HashMultimap.create();
 		entityLocations = new HashMap<>();
 		  // set next entity ID to be one more than the biggest one in the database
-		this.nextEntityID = new AtomicInteger(1);
-		this.actionQueue = new Vector<>();
-		this.commandQueue = new Vector<>();
 		for(var board : boards) addBoard(board);
 	}
 
@@ -168,13 +161,11 @@ public abstract class Game implements Container, Runnable {
 	 */
 	public void addEntity(Entity ent) {
 		assert ent != null;
-		var id = nextEntityID.getAndIncrement();
+		var id = nextEntityID++;
 		
 		registeredEntities.put(id, ent);
-		synchronized (this) { // add entity to the game's contents as default
-			entityLocations.put(ent, this);
-			containerContents.put(this, ent);
-		}
+		entityLocations.put(ent, this);
+		containerContents.put(this, ent);
 		propagateEvent(new Event(this, "entity-creation",
 				Map.of(
 						"entity-id", ent.getID()+""
@@ -186,17 +177,15 @@ public abstract class Game implements Container, Runnable {
 	 * @param ent Entity to be removed
 	 */
 	public void removeEntity(Entity ent) {
-		synchronized(this) {
-			moveEntity(ent, this); // generate an entity moved event
+		moveEntity(ent, this); // generate an entity moved event
 
-			var currentContainer = entityLocations.get(ent);
-			entityLocations.remove(ent);
-			if(currentContainer != null) {
-				containerContents.remove(currentContainer, ent);
-			}
-			// remove entity from game
-			registeredEntities.remove(ent);
+		var currentContainer = entityLocations.get(ent);
+		entityLocations.remove(ent);
+		if(currentContainer != null) {
+			containerContents.remove(currentContainer, ent);
 		}
+		// remove entity from game
+		registeredEntities.remove(ent);
 
 		// alert other game components to entity removal
 		propagateEvent(new Event(this, "entity-deletion",
@@ -245,7 +234,7 @@ public abstract class Game implements Container, Runnable {
 	}
 
 	/** Determines whether or not a specified Container holds the specified entity */
-	public synchronized boolean containsEntity(Container container, Entity ent) {
+	public boolean containsEntity(Container container, Entity ent) {
 		assert ent != null;
 		assert container != null;
 		assert registeredEntities.containsKey(ent.getID());
@@ -255,7 +244,7 @@ public abstract class Game implements Container, Runnable {
 
 	/** locates the Container holding an Entity.
 	 * Every Entity is held by exactly one container (possibly the Game itself if no other) */
-	public synchronized Container getEntityLocation(Entity ent) {
+	public Container getEntityLocation(Entity ent) {
 		assert ent != null;
 		assert registeredEntities.containsKey(ent.getID());
 
@@ -263,7 +252,7 @@ public abstract class Game implements Container, Runnable {
 	}
 
 	/** returns all entities contained by the specified container */
-	public synchronized Stream<Entity> getContainerContents(Container container) {
+	public Stream<Entity> getContainerContents(Container container) {
 		assert container != null;
 
 		return new HashSet<Entity>(containerContents.get(container)).stream();
@@ -274,7 +263,7 @@ public abstract class Game implements Container, Runnable {
 	 * the tile holding the treasure chest is returned.
 	 * Returns null if no tile contains this entity */
 	@Deprecated
-	public synchronized Container getTopLevelEntityLocation(Entity ent) {
+	public Container getTopLevelEntityLocation(Entity ent) {
 		assert ent != null;
 
 		var location = getEntityLocation(ent);
@@ -286,7 +275,7 @@ public abstract class Game implements Container, Runnable {
 
 	/** determines next ID to be used for an event, then increments the count of events */
 	protected int getNextEventId() {
-		return nextEventID.getAndIncrement();
+		return nextEventID++;
 	}
 
 	/** returns a JSON representation of this game
