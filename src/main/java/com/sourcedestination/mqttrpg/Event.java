@@ -7,9 +7,10 @@ import com.google.gson.JsonObject;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.stream.Stream;
 
-
-// TODO: create annotation indicating required and optional properties
 
 /** Indicates when something happens during the game that other game components may react to.
  * Also used to record important events in the processing of the game.
@@ -17,24 +18,26 @@ import java.util.Map;
 public class Event implements HasProperties {
 
     private final Map<String,Object> properties;
+    private final Set<HasProperties> updatedState;
     private final int id;
     private final Game game;
     private final long eventTime;
     private final String type;
 
-    public Event(Game game, String type) {
-        this(game, type, game.getNextEventId(), new HashMap<>());
+    public Event(Game game, String type, HasProperties ... updatedState) {
+        this(game, type, game.getNextEventId(), new HashMap<>(), updatedState);
     }
 
-    private Event(Game game, String type, int id) {
-        this(game, type, id, new HashMap<>());
+    private Event(Game game, String type, int id, HasProperties ... updatedState) {
+        this(game, type, id, new HashMap<>(), updatedState);
     }
 
-    public Event(Game game, String type, Map<String,Object> properties) {
-        this(game, type, game.getNextEventId(), properties);
+    public Event(Game game, String type, Map<String,Object> properties, HasProperties ... updatedState) {
+        this(game, type, game.getNextEventId(), properties, updatedState);
     }
 
-    private Event(Game game, String type, int id, Map<String,Object> properties) {
+    private Event(Game game, String type, int id, 
+            Map<String,Object> properties, HasProperties ... updatedState) {
         this.id = id;
         this.game = game;
         this.type = type;
@@ -42,6 +45,8 @@ public class Event implements HasProperties {
         properties = new HashMap<>(properties); // add id to properties
         properties.put("id", ""+id);
         this.properties = Collections.unmodifiableMap(properties);
+        this.updatedState = new HashSet<>();
+        for(var o : updatedState) this.updatedState.add(o);
     }
 
     @Override
@@ -73,6 +78,10 @@ public class Event implements HasProperties {
 
     public Game getGame() {
         return game;
+    }
+
+    public Stream<HasProperties> getUpdatedStates() {
+        return updatedState.stream();
     }
 
     public String getType() { return type; }

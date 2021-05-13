@@ -57,6 +57,8 @@ public abstract class Game implements Container, Runnable {
 		return startTime;
 	}
 
+	public String getID() { return id; }
+
 	/** returns the number of milliseconds elapsed since the start of the game */
 	public long getGameTime() {
 		return System.currentTimeMillis() - startTime + elapsedTime;
@@ -141,7 +143,23 @@ public abstract class Game implements Container, Runnable {
 
 	public void addBoard(Board board) {
 		board.setGame(this);
-		boards.put(board.getName(), board);
+		boards.put(board.getID(), board);
+		propagateEvent(new Event(this, "board-creation",
+				Map.of(
+						"board-id", board.getID()+""
+				), board));
+	}
+
+	public void removeBoard(Board board) {
+		// remove all entities on the board
+		board.getTileStream().flatMap(t -> t.getEntities()).forEach( e-> {
+			removeEntity(e);
+		});
+		boards.remove(board);
+		propagateEvent(new Event(this, "board-creation",
+				Map.of(
+						"board-id", board.getID()+""
+				), board));
 	}
 
 	/**
@@ -160,7 +178,7 @@ public abstract class Game implements Container, Runnable {
 		propagateEvent(new Event(this, "entity-creation",
 				Map.of(
 						"entity-id", ent.getID()+""
-				)));
+				), ent));
 	}
 
 	/**
@@ -184,7 +202,7 @@ public abstract class Game implements Container, Runnable {
 		propagateEvent(new Event(this, "entity-deletion",
 				Map.of(
 						"entity-id", ent.getID()+""
-				)));
+				), ent));
 	}
 
 	/** moves the entity to a new Container.
@@ -209,7 +227,7 @@ public abstract class Game implements Container, Runnable {
 		var properties = new HashMap<String,Object>();
 		properties.put("entity", ent.getID());
 		if(prev instanceof Tile) {
-			properties.put("previous-board", ((Tile)prev).getBoard().getName());
+			properties.put("previous-board", ((Tile)prev).getBoard().getID());
 			properties.put("previous-row", ((Tile)prev).getRow()+"");
 			properties.put("previous-column", ((Tile)prev).getColumn()+"");
 		} else if(prev instanceof Entity) {
@@ -217,13 +235,13 @@ public abstract class Game implements Container, Runnable {
 		}
 		var current = getEntityLocation(ent);
 		if(current instanceof Tile) {
-			properties.put("board", ((Tile)current).getBoard().getName());
+			properties.put("board", ((Tile)current).getBoard().getID());
 			properties.put("row", ((Tile)current).getRow()+"");
 			properties.put("column", ((Tile)current).getColumn()+"");
 		} else if(current instanceof Entity) {
 			properties.put("entity-container", ((Entity)current).getID()+"");
 		}
-		propagateEvent(new Event(this, "entity-moved", properties));
+		propagateEvent(new Event(this, "entity-moved", properties, ent, container));
 	}
 
 	/** Determines whether or not a specified Container holds the specified entity */
@@ -284,7 +302,6 @@ public abstract class Game implements Container, Runnable {
 	}
 
 	public void propagateEvent(Event event) {
-		hub.publishEvent(event);
 		getAllAgents()
 				.forEach(listener -> ((EventListener) listener).acceptEvent(event));
 		getEntities()
@@ -298,15 +315,7 @@ public abstract class Game implements Container, Runnable {
 				.filter(tile -> tile instanceof EventListener)
 				.forEach(listener -> ((EventListener) listener).acceptEvent(event));
 	}
-
-	/** create an agent for the specified id/role (or retrieve existing agent)
-	 * called when a client connects to control the agent
-	 * @param id
-	 * @param role
-	 * @return
-	 */
-	public abstract Agent getAgent(String id, String role);
-
+	
 	public abstract boolean checkGameAlive();
 
 	public void run() {

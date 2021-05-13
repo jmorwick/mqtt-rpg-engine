@@ -17,24 +17,37 @@ import static net.sourcedestination.funcles.tuple.Pair.makePair;
 
 /** represents a 2d grid of tiles used as a playing surface for a game
  *   */
-public class Board {
+public class Board implements HasProperties {
 	private static Logger logger = Logger.getLogger(Board.class.getCanonicalName());
 
 	private final Map<Pair<Integer>, Tile> tiles;
 	private final Map<EventListener,Object> listeners = new ConcurrentHashMap<>();
 			// no concurrent set, so only keys used to mimic set
-	private final String name;
+	private final String id;
 	private Game game;
+	private final Map<String,Object> properties = new HashMap<>();
+
+	@Override
+	public Map<String,Object> getProperties() {
+		var properties = new HashMap<>(this.properties); // add id to properties
+		properties.put("id", id);
+		return Collections.unmodifiableMap(properties);
+	}
+
+	@Override
+	public void setProperty(String key, Object value) {
+		properties.put(key, value);
+	}
 
 	/** outfits board according to layout of characters in multi-line string charMap.
 	 * Characters that are not keys in {@param tileTypeChars} can be used to
 	 * represent blank space in the map (no tile will be generated). Blank spaces are always treated
 	 * as empty cells and cannot be used.
 	 *
-	 * @param name
+	 * @param id
 	 * @param charMap
 	 */
-	public Board(String name,
+	public Board(String id,
 				 String charMap,
 				 Map<Character, Function2<Integer,Integer,Tile>> tileGenerators,
 				 Tile ... initialTiles) {
@@ -69,7 +82,7 @@ public class Board {
 				col++; // increment column
 			}
 		}
-		this.name = name;
+		this.id = id;
 		this.tiles = Collections.unmodifiableMap(tiles);
 	}
 
@@ -175,8 +188,8 @@ public class Board {
 		return Optional.empty();
 	}
 
-	public String getName() {
-		return name;
+	public String getID() {
+		return id;
 	}
 
 	public int getWidth() {

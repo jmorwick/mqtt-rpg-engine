@@ -86,7 +86,7 @@ public abstract class Entity implements HasProperties {
 		var container = game.getEntityLocation(this);
 		if(location instanceof Tile) {
 			Tile tile = (Tile)container;
-			m.put("board", tile.getBoard().getName());
+			m.put("board", tile.getBoard().getID());
 			m.put("column", tile.getColumn());
 			m.put("row", tile.getRow());
 			m.put("heading", getHeading());

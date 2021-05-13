@@ -84,7 +84,7 @@ public class Tile implements Container {
 		var m = new HashMap<String,Object>();
 		m.put("row", getRow());
 		m.put("column", getColumn());
-		m.put("board", getBoard().getName());
+		m.put("board", getBoard().getID());
 		m.put("type", type);
 		m.put("properties", properties);
 		return gson.toJson(m);
@@ -93,7 +93,7 @@ public class Tile implements Container {
 	public Event tileStatusUpdateEvent() {
 		return new Event(getGame(), "tile-status-update",
 				Map.of(
-						"board", getBoard().getName(),
+						"board", getBoard().getID(),
 						"row", row+"",
 						"column", column+""
 				));
